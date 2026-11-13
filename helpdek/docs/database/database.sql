@@ -50,6 +50,17 @@ CREATE TABLE comments (
   FOREIGN KEY(author_id) REFERENCES users (id)
 );
 
+-- Ficha 14: notas publicas/internas de seguimiento (TicketNote).
+CREATE TABLE ticket_notes (
+  id SERIAL PRIMARY KEY,
+  ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+  autor_id INTEGER NOT NULL REFERENCES users(id),
+  texto TEXT NOT NULL CHECK (length(btrim(texto)) > 0),
+  es_interno BOOLEAN NOT NULL DEFAULT FALSE,
+  fecha_creacion TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_ticket_notes_ticket ON ticket_notes(ticket_id);
+
 CREATE TABLE history (
   id SERIAL NOT NULL,
   ticket_id INTEGER NOT NULL,
