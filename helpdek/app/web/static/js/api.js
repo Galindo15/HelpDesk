@@ -194,6 +194,12 @@ export const api = {
   async createTicket(payload) {
     return (await request("POST", "/tickets", { body: payload })).data;
   },
+  async listNotes(id) {
+    return (await request("GET", `/tickets/${id}/notes`)).data;
+  },
+  async addNote(id, texto, esInterno) {
+    return (await request("POST", `/tickets/${id}/notes`, { body: { texto, es_interno: esInterno } })).data;
+  },
   async addComment(id, body) {
     return (await request("POST", `/tickets/${id}/comments`, { body: { body } })).data;
   },

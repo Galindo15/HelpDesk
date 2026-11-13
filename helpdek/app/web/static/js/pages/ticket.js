@@ -244,6 +244,38 @@ function commentForm(ticket) {
   return form;
 }
 
+// Ficha 14: el listado viene filtrado por el servidor, no por JavaScript.
+function renderNotes(ticket, notes) {
+  const items = notes.map((note) =>
+    el("li", { className: "comment" },
+      el("div", { className: "small text-body-secondary", text: `${personName(note.autor_id)} · ${formatDateTime(note.fecha_creacion)}` }),
+      isStaff(user) && note.es_interno ? badge("Interna", "bg-warning text-dark") : null,
+      el("p", { className: "pre-wrap mb-0", text: note.texto }),
+    ),
+  );
+  const content = items.length ? el("ul", { className: "list-unstyled comment-list" }, ...items)
+                               : el("p", { className: "text-body-secondary", text: "Sin notas de seguimiento." });
+  if (!isStaff(user) || user.role !== "technician") return card("notes-title", `Notas de seguimiento (${notes.length})`, content);
+  const area = el("textarea", { className: "form-control", attrs: { id: "note-text", rows: "3", maxlength: "5000", required: true } });
+  const check = el("input", { className: "form-check-input", attrs: { id: "note-internal", type: "checkbox" } });
+  const button = el("button", { className: "btn btn-primary", text: "Añadir nota", attrs: { type: "submit" } });
+  const form = el("form", { className: "mt-3", attrs: { novalidate: true } },
+    el("label", { className: "form-label", text: "Texto de la nota", attrs: { for: "note-text" } }), area,
+    el("div", { className: "form-check my-2" }, check,
+      el("label", { className: "form-check-label", text: "Nota interna", attrs: { for: "note-internal" } })), button);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!area.value.trim()) {
+      showAlert(alertRegion, "Escribe una nota antes de guardarla.");
+      focusAlert(alertRegion);
+      return;
+    }
+    await runAction(button, "Guardando…", () => api.addNote(ticket.id, area.value.trim(), check.checked),
+                    "Nota guardada.", { form, focusId: "notes-title" });
+  });
+  return card("notes-title", `Notas de seguimiento (${notes.length})`, content, form);
+}
+
 // 22/10/2026 - Historial: quien hizo que y cuando, del mas antiguo al mas reciente (el orden en que llega de la API).
 function renderHistory(ticket) {
   const items = ticket.history.map((event) => {
@@ -262,12 +294,12 @@ function renderHistory(ticket) {
   );
 }
 
-function renderTicket(ticket) {
+function renderTicket(ticket, notes) {
   pageTitle.textContent = `Ticket #${ticket.id}`;
   document.title = `Ticket #${ticket.id} · HelpDesk EDU`;
   view.replaceChildren(
     el("div", { className: "row g-3" }, el("div", { className: "col-lg-8" }, renderSummary(ticket)), el("div", { className: "col-lg-4" }, renderActions(ticket))),
-    el("div", { className: "row g-3" }, el("div", { className: "col-lg-8" }, renderComments(ticket)), el("div", { className: "col-lg-4" }, renderHistory(ticket))),
+    el("div", { className: "row g-3" }, el("div", { className: "col-lg-8" }, renderComments(ticket), renderNotes(ticket, notes)), el("div", { className: "col-lg-4" }, renderHistory(ticket))),
   );
 }
 
@@ -278,7 +310,8 @@ function renderTicket(ticket) {
 async function loadTicket(focusId = null) {
   view.replaceChildren(loadingIndicator("Cargando ticket…"));
   try {
-    renderTicket(await api.getTicket(ticketId));
+    const [ticket, notes] = await Promise.all([api.getTicket(ticketId), api.listNotes(ticketId)]);
+    renderTicket(ticket, notes);
     (document.getElementById(focusId ?? "") ?? document.getElementById("page-title")).focus();
   } catch (error) {
     view.replaceChildren();
