@@ -1,4 +1,4 @@
-"""Persistencia SQLAlchemy de TicketNote, sin realizar commits."""
+
 from sqlalchemy import Boolean, ForeignKey, Text, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 from datetime import datetime

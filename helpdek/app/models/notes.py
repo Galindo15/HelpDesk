@@ -1,4 +1,4 @@
-"""Nota de seguimiento del ticket; su visibilidad se controla en el servicio."""
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from app.domain.clock import now
